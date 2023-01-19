@@ -1,0 +1,112 @@
+<?php
+/*
+ * Add my new menu to the Admin Control Panel
+ */
+// Hook the 'admin_menu' action hook, run the function named 'mfp_Add_My_Admin_Link()'
+add_action( 'admin_menu', 'serial_number_menu' );
+// Add a new top level menu link to the ACP
+function serial_number_menu()
+{
+      add_menu_page(
+        'Serial Number', // Title of the page
+        'Srial Number', // Text to show on the menu link
+        'manage_options', // Capability requirement to see the link
+        'serial_number', // The 'slug' - file to display when clicking the link
+        'init_serial_number'//Function
+    );
+}
+
+function init_serial_number() {
+
+  $initor = new Serial_Number_Page;
+
+  $initor -> init_serial_number();
+}
+
+/**
+ * Create a user when order is completed.
+ * 
+ * @param int $order_id Order ID. 
+ */
+// function sa_create_user( $order_id ) {
+
+//   $password    = wp_generate_password( 16, true );
+//   $user_name   = $user_email = 'testuser@gmail.com';
+
+//   $customer_id = wc_create_new_customer( $user_email, $user_name, $password );
+// }
+
+/**
+     * Add new note item to the database
+     * @param () $user_id, $title, $content, $category = NULL, $type = NULL, $shared_by = NULL, $editable = 1
+     * @return (int|false) The number of rows inserted, or false on error
+     */     
+    function add_order_number_to_database()
+    {
+        global $wpdb, $db_serial_number;
+
+        $serial_numer = generate_serial_number();
+        $current_id = get_current_user_id();
+
+        $new_item_data = array(
+            'user_id' => $current_id,
+            'serial_number' => $serial_numer,
+            'order_id' => 1,
+            'activated' => 1
+        );
+        // print_r($new_item_data);
+
+        $result = $wpdb->insert($db_serial_number, $new_item_data);
+        echo $serial_numer;
+    }
+
+// add_action( 'woocommerce_order_status_completed', 'add_order_number_to_database', 20, 2 );
+
+// generate serial number
+function generate_serial_number() {
+  $arr = array();
+for($i = 0; $i < 20; $i++){
+      if($letter_OR_number = rand(0,1)){ // true: alphabet chosen
+         $arr[] = chr(rand(65, 90));
+      } else { // false: number chosen
+         $arr[] = rand(0,9);
+      }
+      if($i % 4 == 3){
+        ($i < 19)? $arr[] = '-': $arr[] = ' ';
+      }
+}
+
+$str = implode('', $arr);
+return $str;
+}
+
+add_action('woocommerce_after_single_product_summary', 'add_order_number_to_database');
+
+
+// 1. Register new endpoint
+// Note: Resave Permalinks or it will give 404 error  
+function QuadLayers_add_support_endpoint() {
+  add_rewrite_endpoint( 'support', EP_ROOT | EP_PAGES );
+}  
+add_action( 'init', 'QuadLayers_add_support_endpoint' );  
+// ------------------
+// 2. Add new query
+function QuadLayers_support_query_vars( $vars ) {
+  $vars[] = 'support';
+  return $vars;
+}  
+add_filter( 'query_vars', 'QuadLayers_support_query_vars', 0 );  
+// ------------------
+// 3. Insert the new endpoint 
+function QuadLayers_add_support_link_my_account( $items ) {
+  $items['support'] = 'Serial Number ™';
+  return $items;
+}  
+add_filter( 'woocommerce_account_menu_items', 'QuadLayers_add_support_link_my_account' );
+// ------------------
+// 4. Add content to the new endpoint  
+function QuadLayers_support_content() {
+    $front_initor = new Serial_Number_Page;
+    $front_initor -> init_front_page();
+}  
+add_action( 'woocommerce_account_support_endpoint', 'QuadLayers_support_content' );
